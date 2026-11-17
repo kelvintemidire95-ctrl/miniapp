@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Mini App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f5f9;--card:#fff;--ink:#141b34;--mute:#6b7390;--line:#e3e6ef;--accent:#4f46e5;--coin:#f59e0b;--ok:#16a34a;--bad:#dc2626}
+@media (prefers-color-scheme:dark){:root{--bg:#10142a;--card:#1a2040;--ink:#f1f3ff;--mute:#9aa3c7;--line:#2a3157;--accent:#8b83ff}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif}
+body{padding:env(safe-area-inset-top) 16px calc(88px + env(safe-area-inset-bottom))}
+h1,h2,p{margin:0}
+.top{display:flex;align-items:center;gap:12px;padding:18px 0 8px}
+.av{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.top small{color:var(--mute);display:block}
+.hero{padding:28px 0 20px}
+.hero small{color:var(--mute);font-size:14px}
+.bal{font-size:64px;font-weight:800;letter-spacing:-2px;line-height:1;margin-top:6px;display:flex;align-items:baseline;gap:8px}
+.bal span{font-size:20px;font-weight:600;color:var(--coin);letter-spacing:0}
+.stats{display:flex;gap:10px;margin-top:18px}
+.stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.stat b{display:block;font-size:20px}.stat small{color:var(--mute)}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:10px}
+.row{display:flex;align-items:center;gap:12px}
+.row .grow{flex:1;min-width:0}
+.row p{font-weight:600}.row small{color:var(--mute)}
+h2{font-size:22px;margin:22px 0 4px}
+.sub{color:var(--mute);font-size:14px}
+button{font:inherit;font-weight:600;border:0;border-radius:12px;padding:10px 16px;background:var(--accent);color:#fff;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+button:disabled{opacity:.45}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.done{color:var(--ok);font-weight:600}
+input{width:100%;font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-top:8px}
+.link{word-break:break-all;font-size:14px;background:var(--bg);padding:10px;border-radius:10px;margin:10px 0}
+.bar{height:8px;background:var(--line);border-radius:8px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--coin);width:0;transition:width .5s}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+nav button{flex:1;background:none;color:var(--mute);padding:10px 0;font-size:13px}
+nav button.on{color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;font-size:14px}
+.toast.show{opacity:1;transform:translateX(-50%)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="av" id="av">U</div>
+  <div><b id="name">Welcome</b><small id="uid"></small></div>
+</div>
+
+<section id="home" class="on">
+  <div class="hero">
+    <small>Your balance</small>
+    <div class="bal"><b id="bal">0.00</b><span id="cur">USDT</span></div>
+    <div class="stats">
+      <div class="stat"><b id="sTasks">0</b><small>Tasks done</small></div>
+      <div class="stat"><b id="sRefs">0</b><small>Friends invited</small></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row"><div class="grow"><p>Daily bonus</p><small id="bonusTxt">Claim once every 24 hours</small></div>
+    <button id="bonusBtn">Claim</button></div>
+  </div>
+  <div class="card">
+    <p>Next withdrawal</p><small class="sub" id="goalTxt"></small>
+    <div class="bar"><i id="goalBar"></i></div>
+  </div>
+</section>
+
+<section id="tasks">
+  <h2>Tasks</h2><p class="sub">Open a task, then tap Claim to collect the reward.</p>
+  <div id="taskList"></div>
+</section>
+
+<section id="invite">
+  <h2>Invite friends</h2><p class="sub" id="refTxt"></p>
+  <div class="card">
+    <small class="sub">Your invite link</small>
+    <div class="link" id="refLink"></div>
+    <div class="row"><button id="copyBtn" class="ghost grow">Copy link</button><button id="shareBtn" class="grow">Share</button></div>
+  </div>
+</section>
+
+<section id="wallet">
+  <h2>Withdraw</h2><p class="sub" id="minTxt"></p>
+  <div class="card">
+    <input id="addr" placeholder="Wallet address" autocomplete="off">
+    <input id="amt" type="number" inputmode="decimal" placeholder="Amount">
+    <button id="wBtn" style="width:100%;margin-top:12px">Request withdrawal</button>
+  </div>
+  <h2 style="font-size:18px">History</h2>
+  <div id="hist"></div>
+</section>
+
+<nav id="nav">
+  <button data-t="home" class="on">Home</button>
+  <button data-t="tasks">Tasks</button>
+  <button data-t="invite">Invite</button>
+  <button data-t="wallet">Wallet</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- CONFIG: edit these ---------- */
+const CONFIG = {
+  botUsername: "YOUR_BOT_USERNAME",   // without @
+  currency: "USDT",
+  dailyBonus: 0.05,
+  referralReward: 0.10,
+  minWithdraw: 1.00,
+  tasks: [
+    { id: "t1", title: "Join our channel",  reward: 0.10, url: "https://t.me/YOUR_CHANNEL" },
+    { id: "t2", title: "Join our group",    reward: 0.10, url: "https://t.me/YOUR_GROUP" },
+    { id: "t3", title: "Follow us on X",    reward: 0.15, url: "https://x.com/YOUR_PAGE" }
+  ]
+};
+/* NOTE: balances here live in the phone’s storage so you can test the design.
+   For real payouts, keep balances on your server and verify tg.initData there. */
+
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor?.("secondary_bg_color"); }
+const user = tg?.initDataUnsafe?.user || { id: 0, first_name: "Guest" };
+const KEY = "app_state_" + user.id;
+const $ = id => document.getElementById(id);
+const fmt = n => n.toFixed(2);
+const buzz = t => tg?.HapticFeedback?.notificationOccurred(t);
+
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+S = S || { bal: 0, done: {}, opened: {}, refs: 0, bonusAt: 0, hist: [] };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+let shown = 0;
+function animateBal() {
+  const from = shown, to = S.bal, start = performance.now();
+  (function step(now) {
+    const p = Math.min((now - start) / 600, 1);
+    shown = from + (to - from) * (1 - Math.pow(1 - p, 3));
+    $("bal").textContent = fmt(shown);
+    if (p < 1) requestAnimationFrame(step);
+  })(start);
+}
+
+function render() {
+  $("name").textContent = user.first_name || "Guest";
+  $("uid").textContent = user.username ? "@" + user.username : "ID " + user.id;
+  if (user.photo_url) $("av").innerHTML = '<img src="' + user.photo_url + '" alt="">';
+  else $("av").textContent = (user.first_name || "U")[0].toUpperCase();
+  $("cur").textContent = CONFIG.currency;
+  $("sTasks").textContent = Object.keys(S.done).length;
+  $("sRefs").textContent = S.refs;
+  const pct = Math.min(S.bal / CONFIG.minWithdraw * 100, 100);
+  $("goalBar").style.width = pct + "%";
+  $("goalTxt").textContent = S.bal >= CONFIG.minWithdraw
+    ? "You can withdraw now."
+    : fmt(CONFIG.minWithdraw - S.bal) + " " + CONFIG.currency + " to go.";
+  const left = S.bonusAt + 864e5 - Date.now();
+  $("bonusBtn").disabled = left > 0;
+  $("bonusTxt").textContent = left > 0
+    ? "Come back in " + Math.ceil(left / 36e5) + "h"
+    : "+" + fmt(CONFIG.dailyBonus) + " " + CONFIG.currency + " ready";
+  $("taskList").innerHTML = CONFIG.tasks.map(t => {
+    const d = S.done[t.id], o = S.opened[t.id];
+    return '<div class="card row"><div class="grow"><p>' + t.title + '</p><small>+' + fmt(t.reward) + " " + CONFIG.currency + "</small></div>" +
+      (d ? '<span class="done">Done</span>'
+         : o ? '<button data-claim="' + t.id + '">Claim</button>'
+             : '<button class="ghost" data-open="' + t.id + '">Open</button>') + "</div>";
+  }).join("");
+  $("refTxt").textContent = "Earn " + fmt(CONFIG.referralReward) + " " + CONFIG.currency + " for every friend who joins.";
+  $("refLink").textContent = refLink();
+  $("minTxt").textContent = "Minimum " + fmt(CONFIG.minWithdraw) + " " + CONFIG.currency + ".";
+  $("hist").innerHTML = S.hist.length
+    ? S.hist.slice().reverse().map(h => '<div class="card row"><div class="grow"><p>' + fmt(h.a) + " " + CONFIG.currency +
+        '</p><small>' + h.to.slice(0, 10) + "… · " + h.d + '</small></div><small>Pending</small></div>').join("")
+    : '<p class="sub" style="margin-top:8px">No withdrawals yet.</p>';
+  animateBal();
+  save();
+}
+
+const refLink = () => "https://t.me/" + CONFIG.botUsername + "?start=" + user.id;
+
+/* tabs */
+$("nav").onclick = e => {
+  const t = e.target.dataset.t; if (!t) return;
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("on", s.id === t));
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  tg?.HapticFeedback?.selectionChanged();
+};
+
+/* bonus */
+$("bonusBtn").onclick = () => {
+  S.bal += CONFIG.dailyBonus; S.bonusAt = Date.now();
+  buzz("success"); toast("Bonus claimed"); render();
+};
+
+/* tasks */
+$("taskList").onclick = e => {
+  const o = e.target.dataset.open, c = e.target.dataset.claim;
+  if (o) {
+    const t = CONFIG.tasks.find(x => x.id === o);
+    t.url.includes("t.me") && tg ? tg.openTelegramLink(t.url) : (tg ? tg.openLink(t.url) : window.open(t.url, "_blank"));
+    S.opened[o] = true; render();
+  }
+  if (c) {
+    const t = CONFIG.tasks.find(x => x.id === c);
+    S.done[c] = true; S.bal += t.reward;
+    buzz("success"); toast("+" + fmt(t.reward) + " " + CONFIG.currency); render();
+  }
+};
+
+/* invite */
+$("copyBtn").onclick = async () => {
+  try { await navigator.clipboard.writeText(refLink()); toast("Link copied"); }
+  catch (e) { toast("Press and hold the link to copy"); }
+};
+$("shareBtn").onclick = () => {
+  const url = "https://t.me/share/url?url=" + encodeURIComponent(refLink()) + "&text=" + encodeURIComponent("Join me and start earning.");
+  tg ? tg.openTelegramLink(url) : window.open(url, "_blank");
+};
+
+/* withdraw */
+$("wBtn").onclick = () => {
+  const to = $("addr").value.trim(), a = parseFloat($("amt").value);
+  if (to.length < 10) return toast("Enter a valid wallet address"), buzz("error");
+  if (!(a >= CONFIG.minWithdraw)) return toast("Minimum is " + fmt(CONFIG.minWithdraw) + " " + CONFIG.currency), buzz("error");
+  if (a > S.bal) return toast("Amount is higher than your balance"), buzz("error");
+  S.bal -= a;
+  S.hist.push({ a, to, d: new Date().toLocaleDateString() });
+  $("amt").value = ""; buzz("success"); toast("Withdrawal requested"); render();
+};
+
+render();
+</script>
+</body>
+</html>
