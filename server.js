@@ -12,7 +12,7 @@ const r2 = n => Math.round(n * 100) / 100;
 
 let db = {
   users: {}, withdrawals: [],
-  settings: { currency: "USDT", dailyBonus: 0.05, referralReward: 0.10, minWithdraw: 1 },
+  settings: { currency: "USDT", dailyBonus: 0.05, referralReward: 0.10, minWithdraw: 0.3 },
   tasks: [
     { id: "t1", title: "Join our first channel",  reward: 0.10, url: "https://t.me/TGKYROUPDATES",   chat: "@TGKYROUPDATES",   verify: false },
     { id: "t2", title: "Join our second channel", reward: 0.10, url: "https://t.me/TGCRYPTOUPDATEZZ", chat: "@TGCRYPTOUPDATEZZ", verify: false },
